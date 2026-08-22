@@ -1,6 +1,7 @@
 # generate_contribution
 
-[![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/assismauro/generate_contribution)
+[![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/AdaptaBrasil/generate_contribution)
+[![CI](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml/badge.svg)](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml)
 
 Python port of [`ScriptRCalculoContribuicao`](../ScriptRCalculoContribuicao): the AdaptaBrasil
 indicator treatment pipeline (winsorization, Box-Cox, normalization), correlation/VIF/Cronbach's
