@@ -1,5 +1,7 @@
 # generate_contribution
 
+[![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/assismauro/generate_contribution)
+
 Python port of [`ScriptRCalculoContribuicao`](../ScriptRCalculoContribuicao): the AdaptaBrasil
 indicator treatment pipeline (winsorization, Box-Cox, normalization), correlation/VIF/Cronbach's
 alpha diagnostics, and the PowerPoint report (with per-indicator maps and a sector diagram).
