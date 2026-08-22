@@ -3,55 +3,127 @@
 [![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/AdaptaBrasil/generate_contribution)
 [![CI](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml/badge.svg)](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml)
 
-Python port of `ScriptRCalculoContribuicao` (an internal R project, not currently published — see
-"Data assets" below for what was carried over from it): the AdaptaBrasil indicator treatment
-pipeline (winsorization, Box-Cox, normalization), correlation/VIF/Cronbach's alpha diagnostics,
-and the PowerPoint report (with per-indicator maps and a sector diagram).
+AdaptaBrasil's indicator treatment and reporting pipeline: winsorization, Box-Cox, normalization,
+correlation/VIF/Cronbach's alpha diagnostics, and a PowerPoint report (with per-indicator maps and
+a sector diagram).
 
-Numeric parity with the R script is **functionally equivalent, not bit-exact** (see "Library
-mapping" below) — statistical concepts and thresholds are preserved; the underlying numerical
-libraries differ from R's COINr/forecast/corpcor/psych/car stack.
+## Getting started
 
-## Install
+### What it does
+
+`generate_contribution` turns a raw AdaptaBrasil indicator spreadsheet into a validated,
+report-ready dataset, in three stages:
+
+1. **Treatment** — winsorizes outliers, applies a skew/kurtosis-gated Box-Cox transform, and
+   min-max normalizes every indicator, writing two Excel workbooks (a descriptive-statistics
+   summary and the treated data at each stage).
+2. **Diagnostics** — Spearman/partial correlation, VIF, and Cronbach's alpha (with automatic
+   reverse-keying), plus the four PNG diagnostic charts (NA counts, two correlograms, VIF, alpha
+   impact).
+3. **Report** — a PowerPoint deck with one slide group per indicator (descriptive table +
+   boxplot/histogram + choropleth map, at each of the raw/winsorized/Box-Cox/normalized stages),
+   plus a sector diagram slide.
+
+Stage 1 always runs; stages 2 and 3 are optional (`--no-diagnostics`/`--no-report` on the
+`pipeline` command, see below).
+
+### 1. Get the files
+
+```
+git clone https://github.com/AdaptaBrasil/generate_contribution.git
+cd generate_contribution
+```
+
+The sample dataset, shapefiles, and PPTX template needed to run the pipeline are already included
+under `DATASET/`/`TEMPLATE/` (see "Data assets" below) — nothing else to download to try it out.
+
+### 2. Create a virtual environment
+
+macOS/Linux:
+
+```
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+Windows (PowerShell):
+
+```
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### 3. Install the package and its dependencies
 
 ```
 pip install -e ".[dev]"
 ```
 
+This installs the library, the `generate-contribution` CLI, and everything under
+`[project.dependencies]` in `pyproject.toml` (pandas, numpy, scipy, geopandas, python-pptx, etc.);
+`[dev]` additionally pulls in `pytest` to run the test suite. Drop `[dev]` if you only need to run
+the pipeline.
+
 The diagram step (`generate_contribution.diagrams`) additionally requires a system **Graphviz**
 install (the `dot` executable on PATH) — e.g. `winget install Graphviz.Graphviz` on Windows,
 `apt install graphviz` / `dnf install graphviz` on Linux.
 
-## Module map (R file -> Python module)
+### 4. Parameters
 
-| R file | Python module |
+The CLI has two subcommands. `generate-contribution tratamento` runs stage 1 only:
+
+| Flag | Required | Default | Meaning |
+|---|---|---|---|
+| `--input` | yes | — | Path to the input `.xlsx` workbook. |
+| `--imeta-sheet` | no | `Metadados` | Sheet name holding indicator metadata (`Nivel`/`Code`/`Nome`/`Pai`/`Classe` columns). |
+| `--idata-sheet` | yes | — | Sheet name holding the raw data (`GEOCOD`/`MUN`/`UF`/`CLUSTER` + one column per indicator). |
+| `--method-boxcox` | no | `forecast` | Box-Cox engine: `forecast` (MLE lambda) or `yeojohnson`. |
+| `--sigla` | no | `SE` | Short code used in output filenames (e.g. `SA`). |
+| `--subsetor` | no | — | Appended to `--sigla` in filenames and report titles (e.g. `ACESSO`). |
+| `--output-dir` | no | `OUTPUT` | Directory the two output `.xlsx` files are written to. |
+
+`generate-contribution pipeline` runs all three stages and accepts every flag above, plus:
+
+| Flag | Required | Default | Meaning |
+|---|---|---|---|
+| `--template` | yes | — | PPTX template path (e.g. `TEMPLATE/ADAPTA_RESUMO.pptx`). |
+| `--setor-estrategico` | yes | — | Sector name shown on the report's title slide. |
+| `--shp-mun` | yes | — | Municipality boundaries shapefile (`.shp`). |
+| `--shp-uf` | yes | — | State boundaries shapefile (`.shp`). |
+| `--ind` | no | all | Limit the report to the first N indicators — handy for a quick smoke test before running the full deck. |
+| `--figs-dir` | no | `FIGs` | Directory the diagnostic PNGs are written to. |
+| `--no-report` | no | off | Skip PPTX generation (treatment + diagnostics only). |
+| `--no-diagnostics` | no | off | Skip correlation/VIF/Cronbach diagnostics and figures. |
+
+See the "CLI" section below for full example invocations.
+
+## Module reference
+
+| Python module | Responsibility |
 |---|---|
-| `AA01-INICIO_DESCRITIVO_INDICADORES.R` | `cli.py`, `pipeline.py` |
-| `FUNCTION/F01_ADPResumo.r` | `resumo.py` |
-| `FUNCTION/F02_ADPwinsorise.r` | `winsorise.py` |
-| `FUNCTION/F03_ADPBoxCox.r` | `boxcox.py` |
-| `FUNCTION/F04_ADPNormalise.r` | `normalise.py` |
-| `FUNCTION/F07_ADP_GeraExcell.r` | `treatment.py`, `io_excel.py` |
-| `FUNCTION/F08_ADPCORREL.r` | `correlation.py` (stats) + `figures.py` (plots) |
-| `FUNCTION/F05_ADPGraficos.r` | `figures.py` (charts), `maps.py` (choropleths), `diagrams.py` (sector diagram) |
-| `FUNCTION/F06_ADPCriar_pptx_E01.R` | `pptx_report.py` |
+| `cli.py`, `pipeline.py` | CLI entry points and top-level pipeline orchestration |
+| `resumo.py` | Descriptive statistics (boxplot stats, per-indicator/per-cluster summaries) |
+| `winsorise.py` | Winsorization (outlier clipping) |
+| `boxcox.py` | Skew/kurtosis-gated Box-Cox transform |
+| `normalise.py` | Min-max normalization |
+| `treatment.py`, `io_excel.py` | End-to-end treatment orchestration + Excel I/O |
+| `correlation.py` | Correlation/VIF/Cronbach's alpha diagnostics |
+| `figures.py` | Diagnostic and per-indicator PNG charts |
+| `maps.py` | Choropleth maps |
+| `diagrams.py` | Sector diagram |
+| `pptx_report.py` | PowerPoint report assembly |
 
 ## Data assets
 
-`DATASET/` and `TEMPLATE/` hold real, ready-to-run assets copied from the source R project
-(`ScriptRCalculoContribuicao`), so this project runs standalone:
+`DATASET/` and `TEMPLATE/` hold real, ready-to-run assets, so this project runs standalone:
 
 - `DATASET/Base_inicial_SA_Acesso.xlsx` — sample input workbook (`Metadados` + `Dados_RA_Acesso` sheets).
 - `DATASET/SHP/BR_Municipios_2022_gr.*`, `DATASET/SHP/BR_UF_2022_gr.*` — municipality/state boundary shapefiles used by `maps.py`.
 - `TEMPLATE/ADAPTA_RESUMO.pptx` — PPTX template used by `pptx_report.py`.
 
-Not copied over (present in the source R project but unused by this pipeline, or R-specific):
-`IData_RH_INDBRT.csv`/`IMeta_RH_INDBRT.csv` (an older, unused COINr-direct format),
-`Exemplo_BoxCox.csv` (a standalone tutorial script's data), `FUN_VALORES_DES_INUND_*.xlsx` (a
-manually-built lookup table for an unrelated sector), and the R project's own `OUTPUT`/`FIGs`
-(regenerable) and `.RData`/`.Rhistory` (R session state). `Base_inicial_RH_INDBRT.xlsx` (a second
-real dataset, same schema except its metadata sheet uses `Parente` instead of `Pai`) and
-`DESCRITORES/` (human reference docs) were left out too — ask if you want either brought over.
+A second dataset, `Base_inicial_RH_INDBRT.xlsx` (same schema, except its metadata sheet uses
+`Parente` instead of `Pai`), and a `DESCRITORES/` reference-docs folder are available on request if
+you want either added.
 
 ## CLI
 
@@ -70,63 +142,22 @@ generate-contribution pipeline \
   --output-dir OUTPUT --figs-dir FIGs
 ```
 
-## Library mapping (R -> Python)
+## Known data-quality caveat
 
-| R | Python |
-|---|---|
-| `boxplot.stats` (Tukey hinges via `fivenum`) | `resumo.fivenum` / `resumo.boxplot_stats` (hand-implemented, matches R's algorithm) |
-| `forecast::BoxCox.lambda`/`BoxCox` | `scipy.stats.boxcox` (MLE lambda, not Guerrero) |
-| `bestNormalize::yeojohnson` | `scipy.stats.yeojohnson` |
-| `COINr::skew`/`COINr::kurt` | hand-implemented moment-based skew / raw kurtosis |
-| `Hmisc::rcorr(type="spearman")` | `scipy.stats.spearmanr` |
-| `corpcor::pcor.shrink` | Ledoit-Wolf shrinkage covariance (`sklearn.covariance.LedoitWolf`) inverted to partial correlation |
-| `car::vif` | `statsmodels` `variance_inflation_factor` |
-| `psych::alpha(check.keys=TRUE)` | hand-implemented Cronbach's alpha with alpha-if-dropped + sign-based auto reverse-keying |
-| `sf`/`ggplot2::geom_sf`, `corrplot` | `geopandas` + `matplotlib` |
-| `DiagrammeR`/`rsvg` | `graphviz` (Python wrapper around system Graphviz) |
-| `officer`/`flextable` | `python-pptx` |
-
-## Known data-quality caveat (not a port bug)
-
-`winsorise.py` joins data columns to `Metadados.Code` by **exact name match**, mirroring the R
-script's `%in%` join. The sample `Base_inicial_SA_Acesso.xlsx` has several data-sheet column
-headers with stray leading/trailing spaces (e.g. `"MMPD "`, `" ODRSAI"`) that don't match the
-clean `Code` values in `Metadados` — this affects both the R and Python pipelines identically
-(those columns come out all-NA after winsorization, and get excluded downstream). Fix by trimming
+`winsorise.py` joins data columns to `Metadados.Code` by **exact name match**. The sample
+`Base_inicial_SA_Acesso.xlsx` has several data-sheet column headers with stray leading/trailing
+spaces (e.g. `"MMPD "`, `" ODRSAI"`) that don't match the clean `Code` values in `Metadados` —
+those columns come out all-NA after winsorization, and get excluded downstream. Fix by trimming
 the data sheet's column headers at the source if you want those indicators included.
 
-## Behavioral bugs in the R script that this port fixes (not reproduces)
+## Known limitations
 
-Earlier versions of this port deliberately reproduced these for output parity; they are now
-fixed, since they're clearly unintended (each is documented with an inline comment at the point
-it occurs):
-
-- `resumo.py`: per-cluster Min/Q1/Median/Q3/Max in `criar_resumo`'s Cluster branch now come from
-  each cluster's own subset, not the full column (the R script computed them from the full column
-  for every group).
-- `winsorise.py`:
-  - Grupo 1/Grupo 2 winsorization limits are now computed from columns actually classified as
-    "Cluster" in `iMeta` (the R script re-used the Numérico column list by mistake, so it
-    winsorized the wrong columns per cluster).
-  - For a Cluster-classified column, Grupo 1 and Grupo 2 clipping are now merged into one column
-    (each applied only to its own CLUSTER subset). The R script applied Numérico/Grupo 1/Grupo 2
-    as three sequential whole-column overwrites, so only the last one applied (Grupo 2, when
-    present) survived — Grupo 1's clipping was silently discarded.
-  - Columns classified as "Descricao" or "Score" are now passed through unchanged, matching the
-    source project's own README ("Score_ADP = 1 ... Não Aplicar Winsorization"). The R script had
-    a dead code branch that was meant to do this but could never execute, so those columns came
-    back entirely empty.
-- `pptx_report.py`: the Shapiro-Wilk test is run on the actual data (the R script's version
-  references an undefined variable and always falls back to a placeholder string).
-
-One structural gap remains **unresolved by design**, not silently patched over: a
-"Cluster"-classified indicator now legitimately produces 3 descriptive views in
-`resumo.resumo_basico` (Conjunto Completo/Grupo 1/Grupo 2) but only 2 winsorization rows in
-`datawinz.resumo` (Grupo 1/Grupo 2). `slides_resultT`'s per-indicator slide loop assumes those line
-up 1:1, so it raises a clear error for datasets with any "Cluster"-classified metadata rather than
-emitting misaligned slides. The source R project's own README flags Cluster-indicator handling as
-still to be designed ("fazer avaliação depois"); the sample datasets have no Cluster-classified
-rows, so this doesn't affect them.
+A "Cluster"-classified indicator produces 3 descriptive views in `resumo.resumo_basico` (Conjunto
+Completo/Grupo 1/Grupo 2) but only 2 winsorization rows in `datawinz.resumo` (Grupo 1/Grupo 2).
+`slides_resultT`'s per-indicator slide loop assumes those line up 1:1, so it raises a clear error
+for datasets with any "Cluster"-classified metadata rather than emitting misaligned slides.
+Per-indicator report layout for Cluster-classified indicators isn't implemented yet; the sample
+datasets have no Cluster-classified rows, so this doesn't affect them.
 
 ## Tests
 
