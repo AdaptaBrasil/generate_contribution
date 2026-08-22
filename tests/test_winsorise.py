@@ -21,6 +21,15 @@ def test_wins_par_no_outliers_is_N():
     assert row["T_outlier"] == 0
 
 
+def test_adpwinsorise_handles_integer_dtype_columns(sample_idata, sample_imeta):
+    idata_n7 = sample_idata[["IND1", "IND2"]].copy()
+    idata_n7["IND2"] = np.arange(len(idata_n7), dtype="int64")  # an all-integer column, no NaN in the raw data
+    imeta_n7 = sample_imeta[sample_imeta["Nivel"] == 7].reset_index(drop=True)
+
+    result = ADPwinsorise(idata_n7, imeta_n7, sample_idata["CLUSTER"])
+    assert result.idata["IND2"].notna().all()
+
+
 def test_adpwinsorise_clips_outlier_within_range(sample_idata, sample_imeta):
     idata_n7 = sample_idata[["IND1", "IND2"]]
     imeta_n7 = sample_imeta[sample_imeta["Nivel"] == 7].reset_index(drop=True)

@@ -6,8 +6,8 @@ through unchanged. `method_boxcox` accepts `"forecast"` (default, MLE lambda
 via `scipy.stats.boxcox`) or `"yeojohnson"` (`scipy.stats.yeojohnson`, handles
 zero/negative values).
 
-Only `Classe == "Numérico"` columns are transformable; any other class raises
-a clear `ValueError`.
+Only `Classe == "Numérico"` columns are transformable; Descricao/Score columns
+are passed through unchanged (matching `winsorise.py`'s treatment of them).
 """
 from __future__ import annotations
 
@@ -75,7 +75,15 @@ def _prec_boxcox(
     metodo: str,
 ) -> tuple[dict, pd.Series]:
     if classe != "Numérico":
-        raise ValueError(f"ADPBoxCox: column '{nome}' has Classe='{classe}'; only 'Numérico' is supported.")
+        meta = dict(
+            Nome=nome,
+            Classe=classe,
+            BoxCox=0,
+            Distorcao=np.nan,
+            Curtose=np.nan,
+            Metodo=metodo,
+        )
+        return meta, data_win
 
     distorcao = skew(data_win)
     curtose = kurt(data_win)

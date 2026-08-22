@@ -24,10 +24,12 @@ def test_sfunc_bxcx_preserves_na_positions():
     assert out.isna().equals(y.isna())
 
 
-def test_adpboxcox_rejects_non_numerico_class():
+def test_adpboxcox_passes_through_non_numerico_class():
     dados = pd.DataFrame({"X": [1.0, 2.0, 3.0]})
-    with pytest.raises(ValueError):
-        ADPBoxCox(dados, dados, ["Cluster"], None, ["X"], "forecast")
+    result = ADPBoxCox(dados, dados, ["Score"], None, ["X"], "forecast")
+    assert result.meta.loc[0, "Classe"] == "Score"
+    assert result.meta.loc[0, "BoxCox"] == 0
+    pd.testing.assert_series_equal(result.data["X"], dados["X"], check_names=False)
 
 
 def test_adpboxcox_skips_transform_when_not_skewed():

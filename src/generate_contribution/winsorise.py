@@ -100,8 +100,10 @@ def ADPwinsorise(idata: pd.DataFrame, imeta: pd.DataFrame, iref: pd.Series) -> W
 
     passthrough_codes = set(imeta.loc[imeta["Classe"].isin(["Descricao", "Score"]), "Code"])
 
-    dados_out = idata_r.copy()
-    dados_out.iloc[:, :] = np.nan
+    # A fresh all-NaN float frame, rather than blanking a copy of `idata_r` in
+    # place: the latter fails whenever any input column has an integer dtype,
+    # since NaN can't be held in an int64 column.
+    dados_out = pd.DataFrame(np.nan, index=idata_r.index, columns=idata_r.columns)
 
     for col in dados_out.columns:
         if col in passthrough_codes:

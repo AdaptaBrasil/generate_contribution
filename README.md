@@ -118,12 +118,14 @@ See the "CLI" section below for full example invocations.
 `DATASET/` and `TEMPLATE/` hold real, ready-to-run assets, so this project runs standalone:
 
 - `DATASET/Base_inicial_SA_Acesso.xlsx` — sample input workbook (`Metadados` + `Dados_RA_Acesso` sheets).
+- `DATASET/Base_inicial_RH_INDBRT.xlsx` — a second sample workbook (`Metadados` + `Dados_RH_INDBRT`
+  sheets); its metadata's parent-indicator column was renamed from `Parente` to `Pai` on import to
+  match the schema `diagrams.py`/`resumo.py` expect. Includes a `Cluster`-classified indicator, so
+  running the PPTX report against it currently hits the Cluster limitation noted below — treatment
+  and diagnostics run fine.
 - `DATASET/SHP/BR_Municipios_2022_gr.*`, `DATASET/SHP/BR_UF_2022_gr.*` — municipality/state boundary shapefiles used by `maps.py`.
 - `TEMPLATE/ADAPTA_RESUMO.pptx` — PPTX template used by `pptx_report.py`.
-
-A second dataset, `Base_inicial_RH_INDBRT.xlsx` (same schema, except its metadata sheet uses
-`Parente` instead of `Pai`), and a `DESCRITORES/` reference-docs folder are available on request if
-you want either added.
+- `DESCRITORES/DESCRITORES.xlsx`, `DESCRITORES/DIGRAMA_RH.pdf` — human reference docs, not read by any code.
 
 ## CLI
 
