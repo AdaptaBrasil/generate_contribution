@@ -4,41 +4,42 @@
 [![CI](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml/badge.svg)](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml)
 [![Python 3.11 | 3.12 | 3.13 | 3.14](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python&logoColor=white)](https://github.com/AdaptaBrasil/generate_contribution/blob/master/.github/workflows/ci.yml)
 
-AdaptaBrasil's indicator treatment and reporting pipeline: winsorization, Box-Cox, normalization,
-correlation/VIF/Cronbach's alpha diagnostics, and a PowerPoint report (with per-indicator maps and
-a sector diagram).
+Pipeline de tratamento e geração de relatórios de indicadores do AdaptaBrasil: winsorização,
+Box-Cox, normalização, diagnósticos de correlação/VIF/alfa de Cronbach, e um relatório em
+PowerPoint (com mapas por indicador e um diagrama setorial).
 
-## Getting started
+## Primeiros passos
 
-### What it does
+### O que ele faz
 
-`generate_contribution` turns a raw AdaptaBrasil indicator spreadsheet into a validated,
-report-ready dataset, in three stages:
+`generate_contribution` transforma uma planilha bruta de indicadores do AdaptaBrasil em um
+conjunto de dados validado e pronto para relatório, em três etapas:
 
-1. **Treatment** — winsorizes outliers, applies a skew/kurtosis-gated Box-Cox transform, and
-   min-max normalizes every indicator, writing two Excel workbooks (a descriptive-statistics
-   summary and the treated data at each stage).
-2. **Diagnostics** — Spearman/partial correlation, VIF, and Cronbach's alpha (with automatic
-   reverse-keying), plus the four PNG diagnostic charts (NA counts, two correlograms, VIF, alpha
-   impact).
-3. **Report** — a PowerPoint deck with one slide group per indicator (descriptive table +
-   boxplot/histogram + choropleth map, at each of the raw/winsorized/Box-Cox/normalized stages),
-   plus a sector diagram slide.
+1. **Tratamento** — winsoriza outliers, aplica uma transformação Box-Cox condicionada por
+   assimetria/curtose, e normaliza cada indicador por min-max, gravando duas planilhas Excel (um
+   resumo de estatísticas descritivas e os dados tratados em cada etapa).
+2. **Diagnósticos** — correlação de Spearman/parcial, VIF, e alfa de Cronbach (com reversão
+   automática de itens invertidos), além dos quatro gráficos PNG de diagnóstico (contagem de NAs,
+   dois correlogramas, VIF, impacto no alfa).
+3. **Relatório** — um documento PowerPoint com um grupo de slides por indicador (tabela descritiva
+   + boxplot/histograma + mapa coroplético, em cada uma das etapas bruta/winsorizada/Box-Cox/
+   normalizada), além de um slide com o diagrama setorial.
 
-Stage 1 always runs; stages 2 and 3 are optional (`--no-diagnostics`/`--no-report` on the
-`pipeline` command, see below).
+A etapa 1 sempre é executada; as etapas 2 e 3 são opcionais (`--no-diagnostics`/`--no-report` no
+comando `pipeline`, veja abaixo).
 
-### 1. Get the files
+### 1. Obter os arquivos
 
 ```
 git clone https://github.com/AdaptaBrasil/generate_contribution.git
 cd generate_contribution
 ```
 
-The sample dataset, shapefiles, and PPTX template needed to run the pipeline are already included
-under `DATASET/`/`TEMPLATE/` (see "Data assets" below) — nothing else to download to try it out.
+O conjunto de dados de exemplo, os shapefiles e o template PPTX necessários para executar o
+pipeline já estão incluídos em `DATASET/`/`TEMPLATE/` (veja "Ativos de dados" abaixo) — não é
+preciso baixar nada além disso para testar.
 
-### 2. Create a virtual environment
+### 2. Criar um ambiente virtual
 
 macOS/Linux:
 
@@ -54,89 +55,94 @@ python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-### 3. Install the package and its dependencies
+### 3. Instalar o pacote e suas dependências
 
 ```
 pip install -e ".[dev]"
 ```
 
-This installs the library, the `generate-contribution` CLI, and everything under
-`[project.dependencies]` in `pyproject.toml` (pandas, numpy, scipy, geopandas, python-pptx, etc.);
-`[dev]` additionally pulls in `pytest` to run the test suite. Drop `[dev]` if you only need to run
-the pipeline.
+Isso instala a biblioteca, a CLI `generate-contribution`, e tudo que está em
+`[project.dependencies]` no `pyproject.toml` (pandas, numpy, scipy, geopandas, python-pptx, etc.);
+`[dev]` adicionalmente traz o `pytest` para rodar a suíte de testes. Omita `[dev]` se você só
+precisa executar o pipeline.
 
-The diagram step (`generate_contribution.diagrams`) additionally requires a system **Graphviz**
-install (the `dot` executable on PATH) — e.g. `winget install Graphviz.Graphviz` on Windows,
-`apt install graphviz` / `dnf install graphviz` on Linux.
+A etapa de diagrama (`generate_contribution.diagrams`) requer adicionalmente uma instalação do
+**Graphviz** no sistema (o executável `dot` no PATH) — por exemplo `winget install
+Graphviz.Graphviz` no Windows, `apt install graphviz` / `dnf install graphviz` no Linux.
 
-### 4. Parameters
+### 4. Parâmetros
 
-The CLI has two subcommands. `generate-contribution tratamento` runs stage 1 only:
+A CLI tem dois subcomandos. `generate-contribution tratamento` executa apenas a etapa 1:
 
-| Flag | Required | Default | Meaning |
+| Flag | Obrigatório | Padrão | Significado |
 |---|---|---|---|
-| `--input` | yes | — | Path to the input `.xlsx` workbook. |
-| `--imeta-sheet` | no | `Metadados` | Sheet name holding indicator metadata (`Nivel`/`Code`/`Nome`/`Pai`/`Classe` columns). |
-| `--idata-sheet` | yes | — | Sheet name holding the raw data (`GEOCOD`/`MUN`/`UF`/`CLUSTER` + one column per indicator). |
-| `--method-boxcox` | no | `forecast` | Box-Cox engine: `forecast` (MLE lambda) or `yeojohnson`. |
-| `--sigla` | no | `SE` | Short code used in output filenames (e.g. `SA`). |
-| `--subsetor` | no | — | Appended to `--sigla` in filenames and report titles (e.g. `ACESSO`). |
-| `--output-dir` | no | `OUTPUT` | Directory the two output `.xlsx` files are written to. |
+| `--input` | sim | — | Caminho da planilha `.xlsx` de entrada. |
+| `--imeta-sheet` | não | `Metadados` | Nome da planilha com os metadados dos indicadores (colunas `Nivel`/`Code`/`Nome`/`Pai`/`Classe`). |
+| `--idata-sheet` | sim | — | Nome da planilha com os dados brutos (`GEOCOD`/`MUN`/`UF`/`CLUSTER` + uma coluna por indicador). |
+| `--method-boxcox` | não | `forecast` | Mecanismo do Box-Cox: `forecast` (lambda por MLE) ou `yeojohnson`. |
+| `--sigla` | não | `SE` | Código curto usado nos nomes dos arquivos de saída (ex.: `SA`). |
+| `--subsetor` | não | — | Anexado ao `--sigla` nos nomes dos arquivos e nos títulos do relatório (ex.: `ACESSO`). |
+| `--output-dir` | não | `OUTPUT` | Diretório onde os dois arquivos `.xlsx` de saída são gravados. |
 
-`generate-contribution pipeline` runs all three stages and accepts every flag above, plus:
+`generate-contribution pipeline` executa as três etapas e aceita todas as flags acima, além de:
 
-| Flag | Required | Default | Meaning |
+| Flag | Obrigatório | Padrão | Significado |
 |---|---|---|---|
-| `--template` | yes | — | PPTX template path (e.g. `TEMPLATE/ADAPTA_RESUMO.pptx`). |
-| `--setor-estrategico` | yes | — | Sector name shown on the report's title slide. |
-| `--shp-mun` | yes | — | Municipality boundaries shapefile (`.shp`). |
-| `--shp-uf` | yes | — | State boundaries shapefile (`.shp`). |
-| `--ind` | no | all | Limit the report to the first N indicators — handy for a quick smoke test before running the full deck. |
-| `--figs-dir` | no | `FIGs` | Directory the diagnostic PNGs are written to. |
-| `--no-report` | no | off | Skip PPTX generation (treatment + diagnostics only). |
-| `--no-diagnostics` | no | off | Skip correlation/VIF/Cronbach diagnostics and figures. |
+| `--template` | sim | — | Caminho do template PPTX (ex.: `TEMPLATE/ADAPTA_RESUMO.pptx`). |
+| `--setor-estrategico` | sim | — | Nome do setor exibido no slide de título do relatório. |
+| `--shp-mun` | sim | — | Shapefile dos limites municipais (`.shp`). |
+| `--shp-uf` | sim | — | Shapefile dos limites estaduais (`.shp`). |
+| `--ind` | não | todos | Limita o relatório aos N primeiros indicadores — útil para um teste rápido antes de gerar o documento completo. |
+| `--figs-dir` | não | `FIGs` | Diretório onde os PNGs de diagnóstico são gravados. |
+| `--no-report` | não | desligado | Pula a geração do PPTX (apenas tratamento + diagnósticos). |
+| `--no-diagnostics` | não | desligado | Pula os diagnósticos de correlação/VIF/Cronbach e as figuras. |
 
-See the "CLI" section below for full example invocations.
+Veja a seção "CLI" abaixo para exemplos completos de invocação.
 
-## Module reference
+## Referência dos módulos
 
-| Python module | Responsibility |
+| Módulo Python | Responsabilidade |
 |---|---|
-| `cli.py`, `pipeline.py` | CLI entry points and top-level pipeline orchestration |
-| `resumo.py` | Descriptive statistics (boxplot stats, per-indicator/per-cluster summaries) |
-| `winsorise.py` | Winsorization (outlier clipping) |
-| `boxcox.py` | Skew/kurtosis-gated Box-Cox transform |
-| `normalise.py` | Min-max normalization |
-| `treatment.py`, `io_excel.py` | End-to-end treatment orchestration + Excel I/O |
-| `correlation.py` | Correlation/VIF/Cronbach's alpha diagnostics |
-| `figures.py` | Diagnostic and per-indicator PNG charts |
-| `maps.py` | Choropleth maps |
-| `diagrams.py` | Sector diagram |
-| `pptx_report.py` | PowerPoint report assembly |
+| `cli.py`, `pipeline.py` | Pontos de entrada da CLI e orquestração de alto nível do pipeline |
+| `resumo.py` | Estatísticas descritivas (estatísticas de boxplot, resumos por indicador/por cluster) |
+| `winsorise.py` | Winsorização (corte de outliers) |
+| `boxcox.py` | Transformação Box-Cox condicionada por assimetria/curtose |
+| `normalise.py` | Normalização min-max |
+| `treatment.py`, `io_excel.py` | Orquestração do tratamento de ponta a ponta + I/O de Excel |
+| `correlation.py` | Diagnósticos de correlação/VIF/alfa de Cronbach |
+| `figures.py` | Gráficos PNG de diagnóstico e por indicador |
+| `maps.py` | Mapas coropléticos |
+| `diagrams.py` | Diagrama setorial |
+| `pptx_report.py` | Montagem do relatório PowerPoint |
 
-## Data assets
+## Ativos de dados
 
-`DATASET/` and `TEMPLATE/` hold real, ready-to-run assets, so this project runs standalone:
+`DATASET/` e `TEMPLATE/` contêm ativos reais, prontos para uso, de modo que este projeto funciona
+de forma autônoma:
 
-- `DATASET/Base_inicial_SA_Acesso.xlsx` — sample input workbook (`Metadados` + `Dados_RA_Acesso` sheets).
-- `DATASET/Base_inicial_RH_INDBRT.xlsx` — a second sample workbook (`Metadados` + `Dados_RH_INDBRT`
-  sheets); its metadata's parent-indicator column was renamed from `Parente` to `Pai` on import to
-  match the schema `diagrams.py`/`resumo.py` expect. Includes a `Cluster`-classified indicator, so
-  running the PPTX report against it currently hits the Cluster limitation noted below — treatment
-  and diagnostics run fine.
-- `DATASET/SHP/BR_Municipios_2022_gr.*`, `DATASET/SHP/BR_UF_2022_gr.*` — municipality/state boundary shapefiles used by `maps.py`.
-- `TEMPLATE/ADAPTA_RESUMO.pptx` — PPTX template used by `pptx_report.py`.
-- `DESCRITORES/DESCRITORES.xlsx`, `DESCRITORES/DIGRAMA_RH.pdf` — human reference docs, not read by any code.
+- `DATASET/Base_inicial_SA_Acesso.xlsx` — planilha de entrada de exemplo (planilhas `Metadados` +
+  `Dados_RA_Acesso`).
+- `DATASET/Base_inicial_RH_INDBRT.xlsx` — uma segunda planilha de exemplo (planilhas `Metadados` +
+  `Dados_RH_INDBRT`); a coluna de indicador-pai de seus metadados foi renomeada de `Parente` para
+  `Pai` na importação, para corresponder ao esquema esperado por `diagrams.py`/`resumo.py`. Inclui
+  um indicador classificado como `Cluster`, então executar o relatório PPTX com ela atualmente
+  esbarra na limitação de Cluster descrita abaixo — o tratamento e os diagnósticos funcionam
+  normalmente.
+- `DATASET/SHP/BR_Municipios_2022_gr.*`, `DATASET/SHP/BR_UF_2022_gr.*` — shapefiles dos limites
+  municipais/estaduais usados por `maps.py`.
+- `TEMPLATE/ADAPTA_RESUMO.pptx` — template PPTX usado por `pptx_report.py`.
+- `DESCRITORES/DESCRITORES.xlsx`, `DESCRITORES/DIGRAMA_RH.pdf` — documentos de referência para
+  consulta humana, não lidos por nenhum código.
 
 ## CLI
 
 ```
-# Treatment only (winsorize/Box-Cox/normalize + the two output workbooks)
+# Apenas tratamento (winsorização/Box-Cox/normalização + as duas planilhas de saída)
 generate-contribution tratamento \
   --input DATASET/Base_inicial_SA_Acesso.xlsx --idata-sheet Dados_RA_Acesso \
   --sigla SA --subsetor ACESSO --output-dir OUTPUT
 
-# Full pipeline: treatment -> PPTX report -> correlation/VIF/Cronbach diagnostics + figures
+# Pipeline completo: tratamento -> relatório PPTX -> diagnósticos de correlação/VIF/Cronbach + figuras
 generate-contribution pipeline \
   --input DATASET/Base_inicial_SA_Acesso.xlsx --idata-sheet Dados_RA_Acesso \
   --sigla SA --subsetor ACESSO \
@@ -145,29 +151,23 @@ generate-contribution pipeline \
   --output-dir OUTPUT --figs-dir FIGs
 ```
 
-## Known data-quality caveat
+## Limitações conhecidas
 
-`winsorise.py` joins data columns to `Metadados.Code` by **exact name match**. The sample
-`Base_inicial_SA_Acesso.xlsx` has several data-sheet column headers with stray leading/trailing
-spaces (e.g. `"MMPD "`, `" ODRSAI"`) that don't match the clean `Code` values in `Metadados` —
-those columns come out all-NA after winsorization, and get excluded downstream. Fix by trimming
-the data sheet's column headers at the source if you want those indicators included.
+Um indicador classificado como "Cluster" produz 3 visões descritivas em `resumo.resumo_basico`
+(Conjunto Completo/Grupo 1/Grupo 2), mas apenas 2 linhas de winsorização em `datawinz.resumo`
+(Grupo 1/Grupo 2). O laço de slides por indicador em `slides_resultT` assume que essas linhas
+correspondem 1:1, portanto ele lança um erro claro para conjuntos de dados com qualquer metadado
+classificado como "Cluster", em vez de gerar slides desalinhados. O layout de relatório por
+indicador para indicadores classificados como Cluster ainda não está implementado; os conjuntos de
+dados de exemplo não têm linhas classificadas como Cluster, então isso não os afeta.
 
-## Known limitations
-
-A "Cluster"-classified indicator produces 3 descriptive views in `resumo.resumo_basico` (Conjunto
-Completo/Grupo 1/Grupo 2) but only 2 winsorization rows in `datawinz.resumo` (Grupo 1/Grupo 2).
-`slides_resultT`'s per-indicator slide loop assumes those line up 1:1, so it raises a clear error
-for datasets with any "Cluster"-classified metadata rather than emitting misaligned slides.
-Per-indicator report layout for Cluster-classified indicators isn't implemented yet; the sample
-datasets have no Cluster-classified rows, so this doesn't affect them.
-
-## Tests
+## Testes
 
 ```
 pytest tests/
 ```
 
-`tests/test_integration_report.py` and `tests/test_integration_treatment.py` exercise the full
-pipeline against the real assets in `DATASET/`/`TEMPLATE/`; they skip automatically if those files
-or (for the report test) a system Graphviz install aren't present.
+`tests/test_integration_report.py` e `tests/test_integration_treatment.py` exercitam o pipeline
+completo com os ativos reais em `DATASET/`/`TEMPLATE/`; eles são pulados automaticamente se esses
+arquivos ou (para o teste de relatório) uma instalação do Graphviz no sistema não estiverem
+presentes.
