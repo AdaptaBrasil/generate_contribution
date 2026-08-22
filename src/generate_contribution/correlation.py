@@ -1,17 +1,10 @@
 """Correlation / VIF / Cronbach's alpha diagnostics.
 
-Port of `SCRIPTS/FUNCTION/F08_ADPCORREL.r` (statistics functions only; figure
-functions from that same file live in `figures.py`).
-
-Library mapping (functionally, not bit-for-bit, equivalent to the R script):
-- `Hmisc::rcorr(type="spearman")`  -> `scipy.stats.spearmanr`
-- `corpcor::pcor.shrink`           -> Ledoit-Wolf shrinkage covariance
-                                       (`sklearn.covariance.LedoitWolf`) inverted
-                                       into a partial-correlation matrix
-- `car::vif`                       -> `statsmodels` variance_inflation_factor
-- `psych::alpha(check.keys=TRUE)`  -> custom Cronbach's alpha with per-item
-                                       alpha-if-dropped and automatic reverse
-                                       keying (sign of item-vs-rest correlation)
+Spearman correlation and p-values (`ADPcorrel`), Ledoit-Wolf shrinkage partial
+correlation (`ADPcorrel_parcial`), variance inflation factors (`ADPvif`), and
+Cronbach's alpha with per-item alpha-if-dropped and automatic reverse-keying
+(`ADPAlphaCron`), combined by `correl_ind` into a single removal-suggestion
+table. Figure functions live in `figures.py`.
 """
 from __future__ import annotations
 
@@ -25,12 +18,12 @@ from statsmodels.stats.outliers_influence import variance_inflation_factor
 
 
 def total_na(x: pd.Series) -> int:
-    """Port of `total.na(x)`."""
+    """Count of NA values in a column."""
     return int(x.isna().sum())
 
 
 def get_max_cor(cor_matrix: pd.DataFrame) -> pd.DataFrame:
-    """Port of `get_max_cor`: for each variable, the strongest (already-abs) pairing."""
+    """For each variable, its strongest (already-abs) pairing with another variable."""
     max_vals = []
     max_vars = []
     for col in cor_matrix.columns:
@@ -48,7 +41,7 @@ class ADPcorrelResult:
 
 
 def ADPcorrel(x: pd.DataFrame) -> ADPcorrelResult:
-    """Port of `ADPcorrel(X)`: Spearman correlation matrix + p-values."""
+    """Spearman correlation matrix (absolute values) + p-values."""
     cols = list(x.columns)
     if len(cols) < 2:
         raise ValueError("ADPcorrel requires at least 2 columns to compute a correlation matrix.")
@@ -74,7 +67,7 @@ class ADPcorrelParcialResult:
 
 
 def ADPcorrel_parcial(x: pd.DataFrame) -> ADPcorrelParcialResult:
-    """Port of `ADPcorrel_parcial(X)`: shrinkage partial correlation."""
+    """Partial correlation matrix from a Ledoit-Wolf shrinkage covariance estimate."""
     cols = list(x.columns)
     cov = LedoitWolf().fit(x.to_numpy()).covariance_
     precision = np.linalg.inv(cov)
@@ -90,7 +83,7 @@ def ADPcorrel_parcial(x: pd.DataFrame) -> ADPcorrelParcialResult:
 
 
 def ADPvif(x: pd.DataFrame) -> pd.DataFrame:
-    """Port of `ADPvif(X)`: variance inflation factors via an intercept-augmented design matrix."""
+    """Variance inflation factors via an intercept-augmented design matrix."""
     design = np.column_stack([np.ones(len(x)), x.to_numpy()])
     vifs = [variance_inflation_factor(design, i) for i in range(1, design.shape[1])]
     return pd.DataFrame({"Indicador": list(x.columns), "VIF": np.round(vifs, 3)})
@@ -116,14 +109,13 @@ def _cronbach_alpha(cov: np.ndarray) -> float:
 
 
 def ADPAlphaCron(x: pd.DataFrame) -> ADPAlphaCronResult:
-    """Port of `ADPAlphaCron(X)`: Cronbach's alpha with auto reverse-keying and alpha-if-dropped.
+    """Cronbach's alpha with automatic reverse-keying and per-item alpha-if-dropped.
 
     Reverse-keying: an item whose correlation with the sum of the *other*
     items is negative is treated as reverse-scored (sign-flipped) before the
-    alpha/covariance calculations, matching `psych::alpha(check.keys=TRUE)`'s
-    intent. Cronbach's alpha depends only on item variances/covariances, both
-    of which are invariant between sign-flip and psych's item-reflection, so
-    this is a functionally equivalent substitute.
+    alpha/covariance calculations, since Cronbach's alpha depends only on item
+    variances/covariances and a sign flip on one item correctly flips its
+    covariance with every other item.
     """
     cols = list(x.columns)
     values = x.to_numpy(dtype=float)
@@ -170,10 +162,10 @@ class CorrelIndResult:
 
 
 def correl_ind(x: pd.DataFrame, na_count_threshold: int = 55) -> CorrelIndResult:
-    """Port of `correl_ind(x)`.
+    """Runs the full correlation/VIF/Cronbach's-alpha diagnostics and builds the removal-suggestion table.
 
-    `na_count_threshold` mirrors the source script's literal `cont.NA <= 55`
-    cutoff (an absolute NA count, not a percentage).
+    Columns with more than `na_count_threshold` NA values (an absolute count,
+    not a percentage) are excluded before any remaining NA rows are dropped.
     """
     cont_na = x.apply(total_na)
     col_select = cont_na[cont_na <= na_count_threshold].index.tolist()

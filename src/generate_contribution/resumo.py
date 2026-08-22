@@ -1,6 +1,6 @@
-"""Descriptive statistics summaries.
-
-Port of `SCRIPTS/FUNCTION/F01_ADPResumo.r` (`criar_resumo` / `ADPresumo`).
+"""Descriptive statistics summaries: per-indicator (and per-cluster-group) boxplot
+stats, NA counts, and unique-value counts, combined into the tables used by the
+treatment output workbook and the PPTX report.
 """
 from __future__ import annotations
 
@@ -27,9 +27,9 @@ _COLUMNS = [
 
 
 def fivenum(x: np.ndarray) -> np.ndarray:
-    """Tukey's five-number summary, matching R's `stats::fivenum`.
+    """Tukey's five-number summary: [min, lower hinge, median, upper hinge, max].
 
-    Returns [min, lower hinge, median, upper hinge, max]. `x` must already be NA-free.
+    `x` must already be NA-free.
     """
     x = np.sort(np.asarray(x, dtype=float))
     n = len(x)
@@ -43,7 +43,7 @@ def fivenum(x: np.ndarray) -> np.ndarray:
 
 
 def boxplot_stats(x: np.ndarray, coef: float = 1.5) -> tuple[np.ndarray, np.ndarray]:
-    """Port of R's `boxplot.stats`. Returns (stats[5], outlier_values).
+    """Tukey boxplot statistics. Returns (stats[5], outlier_values).
 
     stats = [lower whisker, Q1 (lower hinge), median, Q3 (upper hinge), upper whisker].
     """
@@ -73,7 +73,12 @@ def criar_resumo(
     cluster: pd.Series | None,
     name: str,
 ) -> pd.DataFrame:
-    """Port of `criar_resumo(data, class_type, cluster, name)`."""
+    """Descriptive summary row(s) for one indicator column.
+
+    Numérico columns get a single row; Cluster columns get one row per
+    cluster group plus an overall "Conjunto Completo" row; Score/Descricao
+    columns get a single placeholder row (no numeric stats apply).
+    """
     data = pd.Series(data)
     n = len(data)
     na_count = int(data.isna().sum())
@@ -193,7 +198,10 @@ def ADPresumo(
     cluster: pd.Series | None,
     names: Sequence[str],
 ) -> ResumoResult:
-    """Port of `ADPresumo(data, class_types, clusters, names)`."""
+    """Combines `criar_resumo` for every column into the three summary views used downstream:
+    the full table, a transposed "basico" view (one column per indicator/group), and the
+    NA/uniqueness-only view.
+    """
     if data.shape[1] != len(class_types) or data.shape[1] != len(names):
         raise ValueError("Number of columns in data must match the length of class_types and names.")
 
@@ -203,9 +211,8 @@ def ADPresumo(
     ]
     resumo_combinado = pd.concat(parts, ignore_index=True)
 
-    # R replaces every NA with "-" across the whole combined table (which
-    # coerces the table to character/string) before deriving the basico/na
-    # views below; replicate that so downstream slide tables match.
+    # Every NA is displayed as "-" (which coerces the table to strings) so
+    # downstream slide tables show a dash instead of a blank cell.
     display = resumo_combinado.astype(object).where(resumo_combinado.notna(), "-")
 
     resumo_basico = display.set_index("iName").loc[:, "Classe":"Outliers_Per"].T

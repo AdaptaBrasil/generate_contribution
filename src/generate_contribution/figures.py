@@ -1,11 +1,6 @@
-"""Static diagnostic and per-indicator figures.
-
-Port of the plotting functions in `SCRIPTS/FUNCTION/F08_ADPCORREL.r`
-(`FigContNA`, `FigCorrelPlot`, `FigVIF`, `plotAlphaCronbach`) and
-`SCRIPTS/FUNCTION/F05_ADPGraficos.r` (`criar_grafico`, `grafico_final`).
-
-Library mapping: `ggplot2`/`corrplot` -> `matplotlib`. Colors, thresholds and
-axis ranges are carried over as literal constants from the R source.
+"""Static diagnostic and per-indicator figures: NA counts, correlograms, VIF,
+Cronbach's alpha impact (`figures.py` diagnostics), plus the per-indicator
+boxplot/histogram and scatter/histogram charts used in the PPTX report.
 """
 from __future__ import annotations
 
@@ -23,9 +18,8 @@ from scipy import stats as sp_stats
 
 from .correlation import ADPAlphaCronResult
 
-# R color names -> hex (matplotlib doesn't know "sienna1"/"firebrick" as R defines them)
-_CORRPLOT_CMAP = LinearSegmentedColormap.from_list(
-    "corrplot_beige_firebrick", ["#F5F5DC", "#F5F5DC", "#FF8247", "#B22222"]
+_CORRELOGRAM_CMAP = LinearSegmentedColormap.from_list(
+    "correlogram_beige_firebrick", ["#F5F5DC", "#F5F5DC", "#FF8247", "#B22222"]
 )
 
 
@@ -36,7 +30,7 @@ def _ensure_parent(nfile: str | Path) -> Path:
 
 
 def FigContNA(y: pd.Series, nfile: str | Path = "TESTE.png") -> None:
-    """Port of `FigContNA(Y, nfile)`: bar chart of NA counts per indicator."""
+    """Bar chart of NA counts per indicator."""
     path = _ensure_parent(nfile)
     fig, ax = plt.subplots(figsize=(10, 6), dpi=600)
     ax.bar(y.index.astype(str), y.to_numpy(), color="steelblue")
@@ -57,7 +51,7 @@ def FigContNA(y: pd.Series, nfile: str | Path = "TESTE.png") -> None:
 
 
 def FigCorrelPlot(y: pd.DataFrame, tipo: str = "Total", nfile: str | Path = "output.png") -> None:
-    """Port of `FigCorrelPlot(Y, tipo, nfile)`: circle correlogram (lower/upper triangle)."""
+    """Circle correlogram (lower/upper triangle) of a correlation matrix."""
     path = _ensure_parent(nfile)
     cols = list(y.columns)
     n = len(cols)
@@ -69,7 +63,7 @@ def FigCorrelPlot(y: pd.DataFrame, tipo: str = "Total", nfile: str | Path = "out
             if not visible:
                 continue
             value = float(y.iloc[i, j])
-            color = _CORRPLOT_CMAP(np.clip(value, 0, 1))
+            color = _CORRELOGRAM_CMAP(np.clip(value, 0, 1))
             size = 20 + 260 * np.clip(value, 0, 1)
             ax.scatter(j, n - 1 - i, s=size, color=color, edgecolors="none")
 
@@ -83,7 +77,7 @@ def FigCorrelPlot(y: pd.DataFrame, tipo: str = "Total", nfile: str | Path = "out
     ax.set_title(f"Correlação {tipo} entre Indicadores Simples", fontsize=11, pad=14)
     ax.set_ylabel("Indicadores Simples", fontsize=9)
 
-    sm = plt.cm.ScalarMappable(cmap=_CORRPLOT_CMAP, norm=plt.Normalize(0, 1))
+    sm = plt.cm.ScalarMappable(cmap=_CORRELOGRAM_CMAP, norm=plt.Normalize(0, 1))
     fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
 
     fig.tight_layout()
@@ -93,7 +87,7 @@ def FigCorrelPlot(y: pd.DataFrame, tipo: str = "Total", nfile: str | Path = "out
 
 
 def FigVIF(y: pd.DataFrame, nfile: str | Path = "TESTE.png") -> None:
-    """Port of `FigVIF(Y, nfile)`: VIF lollipop chart with 5/10 reference lines."""
+    """VIF lollipop chart with 5/10 reference lines."""
     path = _ensure_parent(nfile)
     variavel = y.iloc[:, 0].astype(str)
     vif = y.iloc[:, 1].astype(float)
@@ -127,7 +121,7 @@ _ALPHA_FILL_COLORS = {
 
 
 def plotAlphaCronbach(alpha_result: ADPAlphaCronResult, nfile: str | Path = "output.png") -> None:
-    """Port of `plotAlphaCronbach(alpha_df, alpha_total, nfile)`."""
+    """Bar chart of alpha-if-dropped per indicator, colored by keep/remove x reversed-or-not."""
     path = _ensure_parent(nfile)
     alpha_total = alpha_result.alpha_total
     invertido = {name.lstrip("-") for name in alpha_result.keys if name.startswith("-")}
@@ -171,7 +165,7 @@ def criar_grafico(
     nvalores: str = "DD1",
     fsize: float = 16,
 ) -> None:
-    """Port of `criar_grafico`: side-by-side boxplot + histogram-with-normal-curve for one indicator."""
+    """Side-by-side boxplot + histogram-with-normal-curve for one indicator."""
     path = _ensure_parent(nome_arquivo)
     values = pd.to_numeric(dados, errors="coerce").dropna().to_numpy()
 
@@ -214,7 +208,7 @@ def grafico_final(
     nvalores: str = "nvalores",
     fsize: float = 16,
 ) -> None:
-    """Port of `grafico_final`: scatter (normalized vs raw) + histogram of normalized values."""
+    """Scatter (normalized vs raw) + histogram of normalized values."""
     path = _ensure_parent(nome_arquivo)
     fig, (ax_hist, ax_scatter) = plt.subplots(1, 2, figsize=(largura, altura), dpi=dpi)
 
@@ -230,7 +224,7 @@ def grafico_final(
         ax_hist.set_xlabel(nvalores, fontsize=fsize)
         ax_hist.set_ylabel("Densidade", fontsize=fsize)
         ax_hist.set_title(f"Histograma dados Normalizados - {nvalores}", fontsize=fsize, fontweight="bold")
-    except Exception as e:  # pragma: no cover - mirrors the R tryCatch fallback
+    except Exception as e:  # pragma: no cover - degrade gracefully rather than crash the report
         ax_hist.axis("off")
         ax_hist.text(0.5, 0.5, f"Erro ao gerar gráfico:\n{e}", ha="center", va="center", color="red", fontsize=fsize * 0.6)
         ax_hist.set_title(f"Histograma dados Normalizados - {nvalores}", fontsize=fsize, fontweight="bold")

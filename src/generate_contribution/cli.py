@@ -1,4 +1,4 @@
-"""Command-line entry point mirroring `AA01-INICIO_DESCRITIVO_INDICADORES.R`."""
+"""Command-line entry point: `tratamento` (treatment only) and `pipeline` (full pipeline)."""
 from __future__ import annotations
 
 import argparse

@@ -1,8 +1,5 @@
-"""End-to-end indicator treatment pipeline.
-
-Port of `SCRIPTS/FUNCTION/F07_ADP_GeraExcell.r` (`Tratamento`): loads the input
-workbook, runs descriptive stats -> winsorization -> Box-Cox -> normalization,
-and writes the two output workbooks.
+"""End-to-end indicator treatment pipeline: loads the input workbook, runs descriptive
+stats -> winsorization -> Box-Cox -> normalization, and writes the two output workbooks.
 """
 from __future__ import annotations
 
@@ -37,7 +34,7 @@ class TreatmentResult:
 
 
 def run_tratamento(config: TratamentoConfig) -> TreatmentResult:
-    """Port of `Tratamento(input, iMeta, iData, method_boxcox, sigla, subsetor)`."""
+    """Runs the full treatment pipeline (stats -> winsorize -> Box-Cox -> normalize) and writes the output workbooks."""
     raw = load_input(config)
     imeta_adapta = raw.imeta
     idata_bruto = raw.idata

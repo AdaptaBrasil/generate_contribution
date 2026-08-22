@@ -1,7 +1,4 @@
-"""Min-max normalization.
-
-Port of `SCRIPTS/FUNCTION/F04_ADPNormalise.r` (`sfunc_norm` / `ADPNormalise`).
-"""
+"""Min-max normalization: rescales every column to [0, 1]."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -11,10 +8,10 @@ import pandas as pd
 
 
 def sfunc_norm(y: pd.Series) -> pd.Series:
-    """Port of `sfunc_norm(Y)`: (x - min) / (max - min), NA-aware."""
+    """(x - min) / (max - min), NA-aware."""
     x = pd.to_numeric(y, errors="coerce").astype(float)
     if x.isna().all():
-        # matches R's (NA-NA)/(NA-NA) -> NA, without numpy's all-NaN-slice warning
+        # an all-NaN column stays all-NaN, without numpy's all-NaN-slice warning
         return x
     xmax = np.nanmax(x)
     xmin = np.nanmin(x)
@@ -27,6 +24,6 @@ class NormaliseResult:
 
 
 def ADPNormalise(idata: pd.DataFrame) -> NormaliseResult:
-    """Port of `ADPNormalise(iData)`."""
+    """Min-max normalizes every column of `idata`."""
     data_norm = idata.apply(sfunc_norm, axis=0)
     return NormaliseResult(idata=data_norm)

@@ -1,8 +1,4 @@
-"""Choropleth maps of one indicator across Brazilian municipalities.
-
-Port of `Map_result` / `mapnorma_result` in `SCRIPTS/FUNCTION/F05_ADPGraficos.r`
-(`sf`/`ggplot2::geom_sf` -> `geopandas` + `matplotlib`).
-"""
+"""Choropleth maps of one indicator across Brazilian municipalities."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -27,7 +23,7 @@ _NORM_COLORS = ["#02c650", "#a9de00", "#ffcd00", "#ff8300", "#f40000"]
 
 
 def load_shapefiles(caminho_shp_mun: str | Path, caminho_shp_uf: str | Path) -> tuple[gpd.GeoDataFrame, gpd.GeoDataFrame]:
-    """Port of the `sf::st_transform(sf::st_read(...), crs = 4326)` calls in `slides_resultT`."""
+    """Loads the municipality/state shapefiles and reprojects both to WGS 84 (EPSG:4326)."""
     shp_mun = gpd.read_file(caminho_shp_mun).to_crs(epsg=4326)
     shp_uf = gpd.read_file(caminho_shp_uf).to_crs(epsg=4326)
     return shp_mun, shp_uf
@@ -66,7 +62,7 @@ def Map_result(
     dpi: float = 25,
     fsize: float = 16,
 ) -> None:
-    """Port of `Map_result(...)`: continuous (Spectral) choropleth of raw/winsorized/Box-Cox values."""
+    """Continuous (Spectral) choropleth of raw/winsorized/Box-Cox values."""
     path = Path(nome_arquivo)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -103,7 +99,7 @@ def mapnorma_result(
     dpi: float = 25,
     fsize: float = 16,
 ) -> None:
-    """Port of `mapnorma_result(...)`: discrete 5-class choropleth for normalized [0,1] values."""
+    """Discrete 5-class choropleth for normalized [0,1] values."""
     path = Path(nome_arquivo)
     path.parent.mkdir(parents=True, exist_ok=True)
 

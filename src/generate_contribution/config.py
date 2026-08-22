@@ -1,7 +1,7 @@
-"""Configuration objects mirroring the parameters used across the R pipeline.
+"""Configuration objects for the treatment and reporting pipeline.
 
-Equivalent to the arguments passed to `Tratamento()` (F07_ADP_GeraExcell.r) and
-`slides_resultT()` (F06_ADPCriar_pptx_E01.R) in the original R script.
+`TratamentoConfig` holds the parameters for `treatment.run_tratamento`;
+`ReportConfig` holds the parameters for `pptx_report.slides_resultT`.
 """
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 @dataclass(slots=True)
 class TratamentoConfig:
-    """Mirrors the arguments of R's `Tratamento(input, iMeta, iData, method_boxcox, sigla, subsetor)`."""
+    """Parameters for `run_tratamento`: input workbook, metadata/data sheet names, and output naming."""
 
     input: Path
     imeta_sheet: str = "Metadados"
@@ -28,7 +28,7 @@ class TratamentoConfig:
 
 @dataclass(slots=True)
 class ReportConfig:
-    """Mirrors the arguments of R's `slides_resultT(...)`."""
+    """Parameters for `slides_resultT`: PPTX template, shapefiles, and which report stages to run."""
 
     template: Path
     setor_estrategico: str

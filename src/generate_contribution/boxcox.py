@@ -1,18 +1,13 @@
 """Skew/kurtosis-gated Box-Cox transform.
 
-Port of `SCRIPTS/FUNCTION/F03_ADPBoxCox.r` (`sfunc_bxcx` / `ADPBoxCox`).
+A column is only transformed when it's both notably skewed (>= 2) and
+notably peaked (raw kurtosis >= 3.5); otherwise the winsorized data passes
+through unchanged. `method_boxcox` accepts `"forecast"` (default, MLE lambda
+via `scipy.stats.boxcox`) or `"yeojohnson"` (`scipy.stats.yeojohnson`, handles
+zero/negative values).
 
-`method_boxcox` accepts `"forecast"` (default, mapped to `scipy.stats.boxcox`'s
-MLE lambda -- functionally equivalent to R's `forecast::BoxCox` with a
-Guerrero-selected lambda, not bit-identical) or `"yeojohnson"` (mapped to
-`scipy.stats.yeojohnson`, equivalent to `bestNormalize::yeojohnson`). The
-source script's third option, `"COINr"`, is dropped as redundant (see plan).
-
-Only `Classe == "Numérico"` columns are transformable, mirroring the source:
-the R `prec_boxcox` helper only assigns its result for the "Numérico" branch
-and would error on any other class (the names it returns are undefined
-otherwise) -- reproduced here as an explicit `ValueError` instead of letting
-it fail obscurely.
+Only `Classe == "Numérico"` columns are transformable; any other class raises
+a clear `ValueError`.
 """
 from __future__ import annotations
 
@@ -25,7 +20,7 @@ from scipy import stats as sp_stats
 
 
 def skew(x: pd.Series) -> float:
-    """Sample skewness (moment coefficient), functionally equivalent to `COINr::skew`."""
+    """Sample skewness (third standardized moment coefficient)."""
     x = pd.to_numeric(x, errors="coerce").dropna()
     if len(x) == 0:
         return np.nan
@@ -38,11 +33,7 @@ def skew(x: pd.Series) -> float:
 
 
 def kurt(x: pd.Series) -> float:
-    """Raw (non-excess) sample kurtosis, functionally equivalent to `COINr::kurt`.
-
-    Kept as raw kurtosis (normal ~= 3) to match the source script's
-    `Curtose >= 3.5` gating threshold.
-    """
+    """Raw (non-excess) sample kurtosis; normal ~= 3, used against the 3.5 gating threshold below."""
     x = pd.to_numeric(x, errors="coerce").dropna()
     if len(x) == 0:
         return np.nan
@@ -55,7 +46,7 @@ def kurt(x: pd.Series) -> float:
 
 
 def sfunc_bxcx(y: pd.Series, metodo: str) -> pd.Series:
-    """Port of `sfunc_bxcx(Y, metodo)`."""
+    """Applies the Box-Cox/Yeo-Johnson transform to the non-NA values of one column."""
     mask = y.notna()
     y_non_na = pd.to_numeric(y[mask], errors="coerce").astype(float).copy()
     y_non_na[y_non_na == 0] = y_non_na[y_non_na == 0] + 0.001
@@ -84,10 +75,7 @@ def _prec_boxcox(
     metodo: str,
 ) -> tuple[dict, pd.Series]:
     if classe != "Numérico":
-        raise ValueError(
-            f"ADPBoxCox: column '{nome}' has Classe='{classe}'; only 'Numérico' is "
-            "supported (matches the source R script, whose non-Numérico branch is unreachable)."
-        )
+        raise ValueError(f"ADPBoxCox: column '{nome}' has Classe='{classe}'; only 'Numérico' is supported.")
 
     distorcao = skew(data_win)
     curtose = kurt(data_win)
@@ -114,7 +102,7 @@ def ADPBoxCox(
     nome: Sequence[str],
     metodo: str,
 ) -> BoxCoxResult:
-    """Port of `ADPBoxCox(dadoswin, dados, classe, cluster, nome, metodo)`."""
+    """Applies the skew/kurtosis-gated Box-Cox transform to every Numérico column."""
     metas = []
     data_cols = {}
     for i in range(dados.shape[1]):

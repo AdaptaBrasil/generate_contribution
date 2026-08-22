@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "generate_contribution"
 version = "0.1.0"
-description = "Python port of ScriptRCalculoContribuicao: AdaptaBrasil indicator treatment, diagnostics and PPTX report generation."
+description = "AdaptaBrasil indicator treatment, diagnostics, and PPTX report generation."
 requires-python = ">=3.11"
 dependencies = [
     "pandas>=2.1",

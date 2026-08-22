@@ -1,9 +1,4 @@
-"""Excel I/O helpers.
-
-Equivalent to the `openxlsx::loadWorkbook`/`read.xlsx` calls at the top of
-`Tratamento()` (F07_ADP_GeraExcell.r), and to the `openxlsx::createWorkbook`/
-`writeData`/`saveWorkbook` calls that write the two output files.
-"""
+"""Excel I/O helpers: reading the input workbook and writing the two treatment output workbooks."""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -33,7 +28,7 @@ def _timestamp(fmt: str = "%Y-%m-%d_%Hh%Mm") -> str:
 
 
 def build_output_paths(config: TratamentoConfig) -> tuple[Path, Path]:
-    """Mirrors the `outfilex1`/`outfilex2` naming logic in `Tratamento()`."""
+    """Builds the timestamped output filenames for the two treatment workbooks."""
     suffix = config.sigla + (config.subsetor or "")
     ts = _timestamp()
     config.output_dir.mkdir(parents=True, exist_ok=True)
@@ -66,8 +61,7 @@ def write_dados_workbook(
     """Writes the DADOS_TRATADOS_*.xlsx workbook.
 
     `data_ref` is the 4 reference columns (GEOCOD, MUN, UF, CLUSTER); each sheet
-    below drops the CLUSTER column when concatenating, mirroring `data_ref[,-4]`
-    in the R script.
+    below drops the CLUSTER column when concatenating.
     """
     ref_no_cluster = data_ref.drop(columns=[data_ref.columns[3]])
     with pd.ExcelWriter(path, engine="openpyxl") as writer:

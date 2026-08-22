@@ -1,31 +1,16 @@
-"""PowerPoint report assembly.
+"""PowerPoint report assembly: builds one slide group per indicator (descriptive
+table, winsorization/Box-Cox summaries, normalized scatter + normality tests),
+each with a boxplot/histogram chart and a choropleth map, plus a title slide
+and a sector diagram slide.
 
-Port of `SCRIPTS/FUNCTION/F06_ADPCriar_pptx_E01.R` (`officer`/`flextable` ->
-`python-pptx`). Slide positions/sizes below are carried over literally from
-the R script's `ph_location(left=, top=, ...)` / `external_img(width=,
-height=, unit=)` calls (inches unless a `Cm` conversion is shown).
-
-Two deliberate deviations from the literal R source, documented where they
-occur:
-
-1. `slides_normal`'s Shapiro-Wilk call in the R script references an
-   undefined variable `nn` (`shapiro.test(dtabxcx[nn])`), which is always
-   caught by its own `tryCatch` and silently replaced with a placeholder
-   string in every real run. Reproducing that placeholder unconditionally
-   would provide zero information, so this port runs Shapiro-Wilk on the
-   actual data instead (matching the evident intent).
-2. `slides_resultT` assumes `resumo.resumo_basico`'s columns and
-   `datawinz.resumo` / `databxcx.meta` / `datanorm.idata`'s rows/columns line
-   up 1:1 per indicator by position. That holds whenever `iMeta` has no
-   "Cluster"-classified rows (the only case the source R project's own
-   README describes as finished -- Cluster support is flagged there as
-   "fazer avaliação depois", still to be designed). A "Cluster"-classified
-   indicator legitimately produces 3 descriptive views in `resumo_basico`
-   (Conjunto Completo/Grupo 1/Grupo 2) but only 2 winsorization rows in
-   `datawinz.resumo` (Grupo 1/Grupo 2 -- see `winsorise.py`), so the 1:1
-   assumption doesn't hold for such datasets. Rather than silently
-   misindexing, this port raises a clear error in that case; per-indicator
-   slide layout for Cluster-classified indicators is unimplemented.
+One behavior worth knowing about: `slides_resultT` assumes `resumo.resumo_basico`'s columns
+and `datawinz.resumo` / `databxcx.meta` / `datanorm.idata`'s rows/columns line up 1:1 per
+indicator by position. That holds whenever `iMeta` has no "Cluster"-classified rows. A
+"Cluster"-classified indicator legitimately produces 3 descriptive views in `resumo_basico`
+(Conjunto Completo/Grupo 1/Grupo 2) but only 2 winsorization rows in `datawinz.resumo` (Grupo
+1/Grupo 2 -- see `winsorise.py`), so the 1:1 assumption doesn't hold for such datasets. Rather
+than silently misindexing, this raises a clear error in that case; per-indicator slide layout
+for Cluster-classified indicators is unimplemented.
 """
 from __future__ import annotations
 
@@ -95,7 +80,7 @@ def _add_table(
     body_align: dict[int, PP_ALIGN] | None = None,
     merge_header: bool = False,
 ):
-    """Small flextable-equivalent: bold header row, per-column widths, optional alignment."""
+    """Adds a table with a bold header row, per-column widths, and optional cell alignment."""
     body_align = body_align or {}
     n_rows, n_cols = df.shape
     width_total = Inches(sum(col_widths_in))
@@ -151,7 +136,7 @@ def create_pptx(
     output_dir: Path,
     temp_dir: Path,
 ) -> PptxContext:
-    """Port of `create_pptx(template, meta_dados, setor_estrategico, sigla, subsetor)`."""
+    """Copies the template, sets the title slide's subtitle, and adds the sector diagram slide."""
     output_dir.mkdir(parents=True, exist_ok=True)
     suffix = sigla + (subsetor or "")
     ts = datetime.now().strftime("%d-%m-%Y_%Hh%Mm")
@@ -201,7 +186,7 @@ def slides_descricao(
     caminho_imagem: str | Path | None = None,
     caminho_map: str | Path | None = None,
 ) -> None:
-    """Port of `slides_descricao(...)`."""
+    """Adds the descriptive-statistics slide: metadata table, stats table, NA/uniqueness table, chart + map."""
     slide = ctx.prs.slides.add_slide(_get_layout(ctx.prs))
     _set_title(slide, titulo)
 
@@ -240,7 +225,7 @@ def slides_generico(
     titulo: str,
     caminho_map: str | Path | None = None,
 ) -> None:
-    """Port of `slides_generico(...)`."""
+    """Adds a generic summary-table + map slide (used for the winsorization/Box-Cox summaries)."""
     slide = ctx.prs.slides.add_slide(_get_layout(ctx.prs))
     _set_title(slide, titulo)
 
@@ -259,7 +244,7 @@ def slides_normal(
     caminho_grafico: str | Path | None = None,
     caminho_map: str | Path | None = None,
 ) -> None:
-    """Port of `slides_normal(...)` (see module docstring for the Shapiro-Wilk deviation)."""
+    """Adds the normalized-data slide: Shapiro-Wilk/Anderson-Darling normality tests, scatter + map."""
     values = pd.to_numeric(pd.Series(dtabxcx), errors="coerce").dropna().to_numpy()
 
     try:
@@ -312,7 +297,7 @@ def slides_resultT(
     norm: bool = True,
     output_dir: Path = Path("OUTPUT"),
 ) -> Path:
-    """Port of `slides_resultT(...)`: the full per-indicator slide loop."""
+    """Builds the full report: title/diagram slides, then one slide group per indicator."""
     with tempfile.TemporaryDirectory(prefix="generate_contribution_") as tmp:
         temp_dir = Path(tmp)
         ctx = create_pptx(template, meta_adapta, setor_estrategico, sigla, subsetor, Path(output_dir), temp_dir)

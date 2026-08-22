@@ -1,5 +1,5 @@
-"""Full end-to-end pipeline, mirroring `AA01-INICIO_DESCRITIVO_INDICADORES.R` top to bottom:
-treatment -> PPTX report (diagrams/maps included) -> correlation/VIF/Cronbach diagnostics + figures.
+"""Full end-to-end pipeline: treatment -> PPTX report (diagrams/maps included) ->
+correlation/VIF/Cronbach diagnostics + figures.
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def run_pipeline(
     run_report: bool = True,
     run_diagnostics: bool = True,
 ) -> PipelineResult:
-    """Port of the full `AA01-INICIO_DESCRITIVO_INDICADORES.R` script."""
+    """Runs treatment, then optionally the PPTX report and the correlation/diagnostics figures."""
     treatment = run_tratamento(tratamento_config)
 
     report_path = None

@@ -1,8 +1,5 @@
 """Sector diagram (indicator tree) rendering.
 
-Port of `gerar_diagrama_setor` in `SCRIPTS/FUNCTION/F05_ADPGraficos.r`
-(`DiagrammeR`/`rsvg` -> Python `graphviz` package).
-
 Requires a system Graphviz install (the `dot` executable) -- the Python
 `graphviz` package only shells out to it. On Windows, install from
 https://graphviz.org/download/ and ensure `dot` is on PATH; on most Linux
@@ -25,10 +22,9 @@ def gerar_diagrama_setor(
     width: int = 1600,
     height: int = 1000,
 ) -> None:
-    """Port of `gerar_diagrama_setor(data, setor_e, output_file, width, height)`.
+    """Renders one box per distinct `Pai` (parent group), listing its `Code`s, under a root node.
 
-    `data` must have `Pai` and `Code` columns (the metadata table, as used in
-    the source script -- one node per distinct `Pai`, listing its `Code`s).
+    `data` must have `Pai` and `Code` columns (the metadata table).
     """
     path = Path(output_file)
     path.parent.mkdir(parents=True, exist_ok=True)

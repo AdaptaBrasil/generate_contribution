@@ -1,24 +1,12 @@
-"""Winsorization.
+"""Winsorization (IQR-based outlier clipping).
 
-Port of `SCRIPTS/FUNCTION/F02_ADPwinsorise.r` (`wins_par` / `winsorise1` / `ADPwinsorise`).
-
-The source R script has three behavioral bugs that this port fixes rather
-than reproduces (see project history for the earlier, literal port):
-
-1. `winsorise1` computed "Grupo 1"/"Grupo 2" winsorization limits over the
-   Numérico columns (reusing that column-index vector by mistake) instead of
-   the columns actually classified as "Cluster" in `iMeta`. Fixed: Grupo 1/2
-   limits are computed from the "Cluster"-classified columns.
-2. `ADPwinsorise` applied the "Numérico"/"Grupo 1"/"Grupo 2" results as three
-   sequential whole-column overwrites, so only the last one applied survived
-   for rows outside its own cluster subset. Fixed: for a "Cluster"-classified
-   column, Grupo 1 and Grupo 2 clipping are merged into one column (each
-   applied only to its own CLUSTER subset, starting from the same raw data),
-   instead of one clobbering the other.
-3. Columns classified as "Descricao" or "Score" were never populated (a dead
-   branch in the R script meant to copy them through was unreachable). Fixed:
-   such columns are copied through unchanged, matching the source project's
-   own README ("Score_ADP = 1 ... Não Aplicar Winsorization").
+- Numérico columns get a single set of limits computed from the full column.
+- Cluster columns get separate "Grupo 1"/"Grupo 2" limits, each computed from
+  its own CLUSTER==1 / CLUSTER==2 row subset, and each applied only to its own
+  subset when clipping (so Grupo 1 and Grupo 2 clipping are merged into one
+  output column rather than one overwriting the other).
+- Descricao/Score columns are passed through unchanged (winsorization doesn't
+  apply to them).
 """
 from __future__ import annotations
 
@@ -29,7 +17,7 @@ import pandas as pd
 
 
 def wins_par(y: pd.Series, a: str, b: str) -> dict:
-    """Port of `wins_par(Y, a, b)`: winsorization limits for one column."""
+    """Computes IQR-based winsorization limits for one column (or row subset)."""
     x = pd.to_numeric(y, errors="coerce").to_numpy(dtype=float)
     xn = x[~np.isnan(x)]
 
@@ -69,7 +57,7 @@ def wins_par(y: pd.Series, a: str, b: str) -> dict:
 
 
 def winsorise1(idata: pd.DataFrame, imeta: pd.DataFrame, iref: pd.Series) -> pd.DataFrame:
-    """Port of `winsorise1(iData, iMeta, iRef)`.
+    """Computes winsorization limits for every column, one row per (column, group).
 
     Numérico columns get one "Numérico" row (limits from the full column).
     Cluster columns get "Grupo 1"/"Grupo 2" rows (limits from the CLUSTER==1 /
@@ -105,7 +93,7 @@ class WinsoriseResult:
 
 
 def ADPwinsorise(idata: pd.DataFrame, imeta: pd.DataFrame, iref: pd.Series) -> WinsoriseResult:
-    """Port of `ADPwinsorise(iData, iMeta, iRef)`."""
+    """Computes winsorization limits (`winsorise1`) and applies them, column by column."""
     resumo1 = winsorise1(idata, imeta, iref)
     iref = pd.Series(iref).reset_index(drop=True)
     idata_r = idata.reset_index(drop=True)
