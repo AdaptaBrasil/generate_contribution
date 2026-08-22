@@ -2,6 +2,7 @@
 
 [![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/AdaptaBrasil/generate_contribution)
 [![CI](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml/badge.svg)](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://github.com/AdaptaBrasil/generate_contribution/blob/master/pyproject.toml)
 
 AdaptaBrasil's indicator treatment and reporting pipeline: winsorization, Box-Cox, normalization,
 correlation/VIF/Cronbach's alpha diagnostics, and a PowerPoint report (with per-indicator maps and
