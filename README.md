@@ -3,9 +3,10 @@
 [![GitHub](https://img.shields.io/badge/GitHub-generate__contribution-blue?logo=github)](https://github.com/AdaptaBrasil/generate_contribution)
 [![CI](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml/badge.svg)](https://github.com/AdaptaBrasil/generate_contribution/actions/workflows/ci.yml)
 
-Python port of [`ScriptRCalculoContribuicao`](../ScriptRCalculoContribuicao): the AdaptaBrasil
-indicator treatment pipeline (winsorization, Box-Cox, normalization), correlation/VIF/Cronbach's
-alpha diagnostics, and the PowerPoint report (with per-indicator maps and a sector diagram).
+Python port of `ScriptRCalculoContribuicao` (an internal R project, not currently published — see
+"Data assets" below for what was carried over from it): the AdaptaBrasil indicator treatment
+pipeline (winsorization, Box-Cox, normalization), correlation/VIF/Cronbach's alpha diagnostics,
+and the PowerPoint report (with per-indicator maps and a sector diagram).
 
 Numeric parity with the R script is **functionally equivalent, not bit-exact** (see "Library
 mapping" below) — statistical concepts and thresholds are preserved; the underlying numerical
