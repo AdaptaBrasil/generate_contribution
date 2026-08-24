@@ -2,12 +2,6 @@
 `DATASET/Base_inicial_SA_Acesso.xlsx`. Skipped automatically when that file
 isn't present (e.g. a CI checkout that doesn't fetch the large binary
 fixtures).
-
-Only covers treatment + correlation diagnostics, not the PPTX report: this
-dataset's data-sheet column headers have stray leading/trailing whitespace
-that doesn't match `Metadados.Code` for several indicators (a data-quality
-issue in the source spreadsheet, not a port bug -- see README), which trips
-`slides_resultT`'s per-indicator alignment guard.
 """
 from __future__ import annotations
 
@@ -41,6 +35,7 @@ def test_tratamento_and_correl_ind_on_real_dataset(tmp_path):
     assert result.dados_b.shape[0] == 5570
 
     correl = correl_ind(result.data_normal.idata)
-    # whitespace-mismatched columns (e.g. "MMPD ", " ODRSAI") are excluded
-    assert "MMPD " in correl.indicadores_na
+    # columns with too many NAs to correlate reliably are excluded
+    assert "QA" in correl.indicadores_na
+    assert "MMPD" not in correl.indicadores_na
     assert 0 <= correl.alpha_cronbach.alpha_total <= 1
