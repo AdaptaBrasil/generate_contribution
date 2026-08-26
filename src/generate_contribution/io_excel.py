@@ -45,9 +45,9 @@ def write_descritiva_workbook(
 ) -> None:
     """Writes the ANALISE_DESCRITIVA_*.xlsx workbook (sheets: Descritivo, Winsorization, BoxCox)."""
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        resumo_total.to_excel(writer, sheet_name="Descritivo", index=False)
-        winsor_resumo.to_excel(writer, sheet_name="Winsorization", index=False)
-        boxcox_meta.to_excel(writer, sheet_name="BoxCox", index=False)
+        resumo_total.to_excel(writer, sheet_name="Descritivo", index=False, float_format="%.6f")
+        winsor_resumo.to_excel(writer, sheet_name="Winsorization", index=False, float_format="%.6f")
+        boxcox_meta.to_excel(writer, sheet_name="BoxCox", index=False, float_format="%.6f")
 
 
 def write_dados_workbook(
@@ -65,7 +65,15 @@ def write_dados_workbook(
     """
     ref_no_cluster = data_ref.drop(columns=[data_ref.columns[3]])
     with pd.ExcelWriter(path, engine="openpyxl") as writer:
-        pd.concat([ref_no_cluster, idata_n7], axis=1).to_excel(writer, sheet_name="BNivel 7", index=False)
-        pd.concat([ref_no_cluster, data_winsor], axis=1).to_excel(writer, sheet_name="Winsorization", index=False)
-        pd.concat([ref_no_cluster, data_boxcox], axis=1).to_excel(writer, sheet_name="BoxCox", index=False)
-        pd.concat([ref_no_cluster, data_normal], axis=1).to_excel(writer, sheet_name="Normalizado", index=False)
+        pd.concat([ref_no_cluster, idata_n7], axis=1).to_excel(
+            writer, sheet_name="BNivel 7", index=False, float_format="%.6f"
+        )
+        pd.concat([ref_no_cluster, data_winsor], axis=1).to_excel(
+            writer, sheet_name="Winsorization", index=False, float_format="%.6f"
+        )
+        pd.concat([ref_no_cluster, data_boxcox], axis=1).to_excel(
+            writer, sheet_name="BoxCox", index=False, float_format="%.6f"
+        )
+        pd.concat([ref_no_cluster, data_normal], axis=1).to_excel(
+            writer, sheet_name="Normalizado", index=False, float_format="%.6f"
+        )
