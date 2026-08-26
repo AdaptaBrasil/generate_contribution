@@ -151,6 +151,61 @@ generate-contribution pipeline \
   --output-dir OUTPUT --figs-dir FIGs
 ```
 
+## Notebook de exemplo (Jupyter)
+
+`jupyter_example.ipynb` (e seu equivalente sem Jupyter, `plain_python_example.py`) executam o
+pipeline completo chamando `run_pipeline` diretamente em Python, como alternativa à CLI.
+
+Para rodar: abra `jupyter_example.ipynb`, ajuste `tratamento_config`/`report_config` (veja abaixo)
+e use **Run All** para executar tudo de uma vez, ou execute célula por célula com Shift+Enter — a
+única dependência entre células é a ordem (`BASE_DIR` precisa existir antes das duas células de
+configuração, que por sua vez precisam existir antes da célula que chama `run_pipeline`).
+
+### O que ajustar em `tratamento_config` (`TratamentoConfig`)
+
+| Campo | Obrigatório | Significado |
+|---|---|---|
+| `input` | sim | Caminho da planilha `.xlsx` de entrada, ex.: `BASE_DIR / "DATASET" / "Base_inicial_SA_Acesso.xlsx"`. |
+| `imeta_sheet` | não (padrão `"Metadados"`) | Nome da planilha com os metadados dos indicadores. |
+| `idata_sheet` | sim | Nome da planilha com os dados brutos (`GEOCOD`/`MUN`/`UF`/`CLUSTER` + uma coluna por indicador). |
+| `method_boxcox` | não (padrão `"forecast"`) | Mecanismo do Box-Cox: `"forecast"` (lambda por MLE) ou `"yeojohnson"`. |
+| `sigla` | não (padrão `"SE"`) | Código curto usado nos nomes dos arquivos de saída (ex.: `"SA"`). |
+| `subsetor` | não | Anexado à `sigla` nos nomes dos arquivos e nos títulos do relatório (ex.: `"ACESSO"`). |
+| `output_dir` | não (padrão `"OUTPUT"`) | Diretório onde os arquivos de saída são gravados. |
+
+### O que ajustar em `report_config` (`ReportConfig`)
+
+| Campo | Obrigatório | Significado |
+|---|---|---|
+| `template` | sim | Caminho do template PPTX, ex.: `BASE_DIR / "TEMPLATE" / "ADAPTA_RESUMO.pptx"`. |
+| `setor_estrategico` | sim | Nome do setor exibido no slide de título do relatório. |
+| `sigla` / `subsetor` | sim / não | Mesmo significado de `tratamento_config`; normalmente repetidos com os mesmos valores. |
+| `caminho_shp_mun` / `caminho_shp_uf` | sim | Shapefiles dos limites municipais/estaduais (`.shp`). |
+| `ind` | não (padrão todos) | Limita o relatório aos N primeiros indicadores — útil para um teste rápido. |
+| `resu`, `winz`, `bxcx`, `norm` | não (padrão `True`) | Liga/desliga os grupos de slides de cada etapa (descritivo/winsorizado/Box-Cox/normalizado). |
+| `output_dir` | não (padrão `"OUTPUT"`) | Deve apontar para o mesmo diretório usado em `tratamento_config.output_dir`. |
+
+A célula `run_pipeline(...)` também recebe `figs_dir` (onde os PNGs de diagnóstico são gravados,
+padrão `BASE_DIR / "FIGs"`) e as flags `run_report`/`run_diagnostics` para pular a etapa 3 ou 2,
+respectivamente (equivalentes a `--no-report`/`--no-diagnostics` na CLI).
+
+### Onde ficam os resultados
+
+Depois de rodar, `OUTPUT/` (ou o `output_dir` configurado) contém três arquivos com timestamp no
+nome (`{sigla}{subsetor}_{AAAA-MM-DD_HHhMMm}`):
+
+| Arquivo | Conteúdo |
+|---|---|
+| `ANALISE_DESCRITIVA_*.xlsx` | Planilhas `Descritivo` (estatísticas descritivas por indicador), `Winsorization` (limites/contagem de outliers cortados) e `BoxCox` (lambda e assimetria/curtose por indicador). |
+| `DADOS_TRATADOS_*.xlsx` | Planilhas `BNivel 7` (dados brutos), `Winsorization`, `BoxCox` e `Normalizado` — os dados município a município em cada etapa de tratamento, cada uma precedida pelas colunas de referência `GEOCOD`/`MUN`/`UF`. |
+| `REL_*.pptx` | O relatório PowerPoint: um grupo de slides por indicador (tabela descritiva + boxplot/histograma + mapa coroplético em cada etapa habilitada) mais um slide com o diagrama setorial. |
+
+`FIGs/` (ou o `figs_dir` configurado) recebe 5 PNGs de diagnóstico gerados a partir do conjunto
+completo de indicadores: `Contagem_NA_ISimples.png` (NAs por indicador), `Correlacao_Total.png` e
+`Correlacao_Parcial.png` (correlogramas de Spearman total/parcial), `VIF_ISimples.png` (fator de
+inflação de variância) e `AlphaCronbach_ISimples.png` (impacto de cada indicador no alfa de
+Cronbach). As duas últimas células do notebook exibem esses PNGs inline após a execução.
+
 ## Limitações conhecidas
 
 Um indicador classificado como "Cluster" produz 3 visões descritivas em `resumo.resumo_basico`
