@@ -248,6 +248,12 @@ def slides_normal(
     values = pd.to_numeric(pd.Series(dtabxcx), errors="coerce").dropna().to_numpy()
 
     try:
+        if values.size < 3 or values.std() == 0:
+            # anderson() divides by the sample scale internally; constant (zero-
+            # variance) data drives that to 0/0 and silently returns NaN rather
+            # than raising, so we guard for it explicitly (mirrors the shapiro
+            # guard below).
+            raise ValueError("constant or too-small series")
         with warnings.catch_warnings():
             # deliberately using the legacy critical_values-based result (no
             # `method=`); scipy >=1.17 warns about its future default either way
@@ -262,7 +268,16 @@ def slides_normal(
         adtest_txt = "Series de dados incompativel com o AD.test"
 
     try:
-        stat, pvalue = sp_stats.shapiro(values)
+        if values.size < 3 or values.std() == 0:
+            # shapiro() divides by the sample scale internally; constant (zero-
+            # variance) data drives that to 0/0 and silently returns NaN rather
+            # than raising, so we guard for it explicitly.
+            raise ValueError("constant or too-small series")
+        with warnings.catch_warnings():
+            # scipy warns that p-values are approximate for N > 5000; expected
+            # given our typical sample sizes, so silence it like the AD test above.
+            warnings.simplefilter("ignore", UserWarning)
+            stat, pvalue = sp_stats.shapiro(values)
         shtest_txt = f"Shapiro-Wilk normality test\nW = {stat:.4f}, p-value = {pvalue:.4g}"
     except Exception:
         shtest_txt = "Series de dados incompativel com o Shapiro.test"
